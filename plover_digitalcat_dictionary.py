@@ -259,7 +259,10 @@ class JetReader(object):
         if encoded[0:1]==(0xff, 0xfe):
             raise ValueError("compressed string handling is not yet implemented")
 
-        return bytes.decode(encoded, encoding='UTF-16')
+        try:
+            return bytes.decode(encoded, encoding='UTF-16')
+        except UnicodeDecodeError:
+            return ""
 
     def _load_page(self, page_number):
         """
@@ -338,6 +341,14 @@ class JetToStenoAdapter(object):
         self._source = source
 
     def __iter__(self):
+        PREFIX = 0x8000
+        SUFFIX = 0x4000
+        CAP_NEXT = 0x2000
+        GLUE_LETTER = 0x1000
+        GLUE_NUMBER = 0x800
+        DOUBLE_LAST = 0x400
+        OR_ENDING = 0x200
+        PROPER_NAME = 0x100
 
         for row in self._source:
 
@@ -347,18 +358,25 @@ class JetToStenoAdapter(object):
 
             affix = False
 
-            if flags & 0x8000:
+            if flags & CAP_NEXT:
+                translation = translation.replace("^", "").strip()
+
+            if flags & PREFIX:
                 translation = '^'+translation
                 affix = True
 
-            if flags % 0x4000:
+            if flags & SUFFIX:
                 translation += '^'
+                affix = True
+
+            if flags & GLUE_LETTER or flags & GLUE_NUMBER:
+                translation = '&' + translation
                 affix = True
 
             if affix:
                 translation = "{%s}" % (translation,)
 
-            if flags % 0x2000:
+            if flags & CAP_NEXT:
                 translation += '{-|}'
 
             yield (steno, translation)
@@ -383,38 +401,12 @@ class DigitalCATDictionary(StenoDictionary):
     def __init__(self):
         super(DigitalCATDictionary, self).__init__()
 
-        self._contents = None
-        self._reverse_contents = None
-        self.readonly = True
-
     def _load(self, filename):
-
         with open(filename, 'rb') as fp:
             reader = JetReader(fp)
             adapter = JetToStenoAdapter(reader)
 
-            self._contents = {}
-            self._reverse_contents = defaultdict(list)
+            self.update(adapter)
 
-            for (k, v) in adapter:
-                self._contents[k] = v
-                self._reverse_contents[v].append(k)
-
-    def getattr(self, key, default=None):
-        return self.__getattr__(key, default)
-
-    def __setitem__(self, key, value):
-        raise NotImplementedError()
-
-    def __delitem__(self, key):
-        raise NotImplementedError()
-
-    def __getitem__(self, key):
-        return self._contents.__getitem__(key)
-
-    def get(self, key, fallback=None):
-        return self._contents.get(key, fallback)
-
-    def reverse_lookup(self, value):
-        return self._reverse_contents[value]
-
+        # set readonly after initial load, since writing is not implemented
+        self.readonly = True
