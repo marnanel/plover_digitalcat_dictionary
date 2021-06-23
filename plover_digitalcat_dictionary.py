@@ -69,7 +69,7 @@ USEFUL_COLUMNS = ('Steno', 'English', 'Flags')
 
 ##############################################
 
-class JetReader(object):
+class JetReader:
     """An iterator over the steno table inside a Jet4 database.
     """
     def __init__(self, fp):
@@ -327,7 +327,7 @@ def _decode_steno(encoded,
 
 ##############################################
 
-class JetToStenoAdapter(object):
+class JetToStenoAdapter:
     """An iterator that maps the steno table in a Jet4 database
     to dictionary entries Plover can use.
     """
@@ -378,8 +378,7 @@ class DigitalCATDictionary(StenoDictionary):
     readonly = True
 
     def __init__(self):
-        super(DigitalCATDictionary, self).__init__()
-
+        super().__init__()
         self._contents = None
         self._reverse_contents = None
         self.readonly = True
