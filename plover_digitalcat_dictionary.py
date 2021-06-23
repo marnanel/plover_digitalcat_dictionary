@@ -360,15 +360,6 @@ class JetToStenoAdapter:
 
             yield (steno, translation)
 
-##############################################
-
-class JetDictionary(StenoDictionary):
-    """A StenoDictionary loaded from a Jet (.mdb, .dct) file."""
-
-    def _load(self, filename):
-
-        self.update(adapter)
-
 #########################################################
 # CF
 
