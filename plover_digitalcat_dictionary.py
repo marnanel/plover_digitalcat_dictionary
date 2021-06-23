@@ -21,10 +21,10 @@
 # This implementation owes a debt of thanks to the mdbtools documentation:
 # https://github.com/brianb/mdbtools/blob/master/HACKING
 
-from collections import defaultdict
 import struct
 
 from plover.steno_dictionary import StenoDictionary
+from plover.steno import normalize_steno
 
 
 ##############################################
@@ -281,8 +281,8 @@ def _decode_steno(encoded,
         #
         # So the bitmasks are:
         #   ?#ST KPWH RAO* EUFR PBLG TSDZ
-        #          111 11          - vowels and *
-        #            11 1111 1111  - right-hand keys
+        #              111 11              - vowels and *
+        #                    11 1111 1111  - right-hand keys
         vowel_bitmask      = 0x007C00,
         right_hand_bitmask = 0x0003FF,
     ):
@@ -301,27 +301,29 @@ def _decode_steno(encoded,
                 (such as ("SPAOPB", "-FL")).
     """
 
-    result = []
+    steno = ''
 
     while encoded:
-        result.append('')
+        if steno:
+            steno += '/'
+
         stroke = int(encoded[:6], 16)
 
-        needs_hyphen = (stroke & right_hand_bitmask) \
-            and not (stroke & vowel_bitmask)
+        needs_hyphen = stroke & right_hand_bitmask \
+            and not stroke & vowel_bitmask
 
-        for i in keys:
-            if i=='-':
+        for k in keys:
+            if k == '-':
                 if needs_hyphen:
-                    result[-1] += '-'
+                    steno += '-'
             else:
                 if stroke & 0x800000:
-                    result[-1] += i
+                    steno += k
                 stroke <<= 1
 
         encoded = encoded[6:]
 
-    return tuple(result)
+    return normalize_steno(steno)
 
 ##############################################
 
@@ -368,39 +370,8 @@ class DigitalCATDictionary(StenoDictionary):
 
     readonly = True
 
-    def __init__(self):
-        super().__init__()
-        self._contents = None
-        self._reverse_contents = None
-        self.readonly = True
-
     def _load(self, filename):
-
         with open(filename, 'rb') as fp:
             reader = JetReader(fp)
             adapter = JetToStenoAdapter(reader)
-
-            self._contents = {}
-            self._reverse_contents = defaultdict(list)
-
-            for (k, v) in adapter:
-                self._contents[k] = v
-                self._reverse_contents[v].append(k)
-
-    def getattr(self, key, default=None):
-        return self.__getattr__(key, default)
-
-    def __setitem__(self, key, value):
-        raise NotImplementedError()
-
-    def __delitem__(self, key):
-        raise NotImplementedError()
-
-    def __getitem__(self, key):
-        return self._contents.__getitem__(key)
-
-    def get(self, key, fallback=None):
-        return self._contents.get(key, fallback)
-
-    def reverse_lookup(self, value):
-        return self._reverse_contents[value]
+            self.update(adapter)
