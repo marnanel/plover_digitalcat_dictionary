@@ -1,6 +1,4 @@
 #########################################################
-
-
 # Copyright (c) 2018 Open Steno Project
 # See LICENSE.txt for details.
 #
@@ -27,6 +25,7 @@ from collections import defaultdict
 import struct
 
 from plover.steno_dictionary import StenoDictionary
+
 
 ##############################################
 #
@@ -73,7 +72,6 @@ class JetReader:
     """An iterator over the steno table inside a Jet4 database.
     """
     def __init__(self, fp):
-
         self._fp = fp
         self._control = self._find_control_page()
 
@@ -182,7 +180,7 @@ class JetReader:
                         if start_of_record & 0x8000:
                             #  0x8000 = deleted row
                             continue
-                        elif start_of_record & 0x4000:
+                        if start_of_record & 0x4000:
                             #  0x4000 = 4-byte reference to another data page,
                             #         which we're going to find and
                             #         read anyway
@@ -328,9 +326,11 @@ def _decode_steno(encoded,
 ##############################################
 
 class JetToStenoAdapter:
+
     """An iterator that maps the steno table in a Jet4 database
     to dictionary entries Plover can use.
     """
+
     def __init__(self, source):
         self._source = source
 
@@ -361,9 +361,9 @@ class JetToStenoAdapter:
             yield (steno, translation)
 
 #########################################################
-# CF
 
 class DigitalCATDictionary(StenoDictionary):
+
     """A StenoDictionary loaded from a DigitalCAT (.dct) file."""
 
     readonly = True
@@ -404,4 +404,3 @@ class DigitalCATDictionary(StenoDictionary):
 
     def reverse_lookup(self, value):
         return self._reverse_contents[value]
-
