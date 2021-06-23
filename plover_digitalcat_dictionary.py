@@ -23,13 +23,10 @@
 # This implementation owes a debt of thanks to the mdbtools documentation:
 # https://github.com/brianb/mdbtools/blob/master/HACKING
 
-import struct
-import zlib
-import xml.etree.ElementTree as ET
-from plover.steno import normalize_steno
-from plover.steno_dictionary import StenoDictionary
-from plover import resource
 from collections import defaultdict
+import struct
+
+from plover.steno_dictionary import StenoDictionary
 
 ##############################################
 #
